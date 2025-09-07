@@ -1,0 +1,83 @@
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+plugins {
+    alias(libs.plugins.sonarqube)
+    alias(libs.plugins.spotless) apply false
+}
+
+repositories { mavenCentral() }
+
+subprojects { p ->
+    apply plugin: "java"
+    apply plugin: "com.diffplug.spotless"
+
+    group = "com.tuanPhan"
+    version = "0.1.0"
+
+    jar { archiveFileName = "${p.parent.name}-${p.name}.jar" }
+
+    repositories {
+        mavenCentral()
+        maven { url = "https://maven.google.com/" }
+    }
+
+    java {
+        toolchain { languageVersion = JavaLanguageVersion.of(17) }
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = 17
+    }
+
+    dependencies {
+        testImplementation(libs.testing.jupiter)
+        testImplementation(libs.testing.assertj)
+    }
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events TestLogEvent.FAILED, TestLogEvent.SKIPPED
+            exceptionFormat "full"
+        }
+    }
+
+    configurations.configureEach {
+        resolutionStrategy { force(libs.utility.snakeyaml) }
+    }
+
+
+    spotless {
+        java {
+            clearSteps()
+            target fileTree("src") {
+                include "**/*.java"
+                exclude "**/resources/**", "**/generated/**"
+            }
+            googleJavaFormat("1.22.0")
+            removeUnusedImports()
+        }
+    }
+
+
+    tasks.matching { it.name.startsWith("spotless") }.configureEach {
+        group = "formatting"
+    }
+    tasks.register("format") {
+        group = "formatting"; description = "Run all formatters (Spotless)"
+        dependsOn("spotlessApply")
+    }
+    tasks.register("formatCheck") {
+        group = "formatting"; description = "Check formatting (Spotless)"
+        dependsOn("spotlessCheck")
+    }
+}
+
+wrapper {
+    gradleVersion = "8.7"
+    distributionType = Wrapper.DistributionType.ALL
+}

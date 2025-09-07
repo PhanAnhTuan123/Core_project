@@ -1,0 +1,28 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'groovy'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Optional: if your plugin uses Flyway APIs
+    implementation 'org.flywaydb:flyway-core:9.22.3'
+    implementation gradleApi()
+    implementation localGroovy()
+
+}
+
+
+gradlePlugin {
+    plugins {
+        create("flyway") {
+            id = 'com.tuanPhan.plugin.flyway'
+            implementationClass = 'com.tuanPhan.plugin.flyway.FlywayPlugin'
+        }
+    }
+}
+
+

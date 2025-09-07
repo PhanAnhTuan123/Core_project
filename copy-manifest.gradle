@@ -1,0 +1,8 @@
+tasks.register('copyManifest', Copy) {
+    from(rootProject.file("manifest.json"))
+    into(file("src/main/resources"))
+}
+
+tasks.named("processResources") {
+    dependsOn("copyManifest")
+}

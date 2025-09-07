@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    platform: linux/amd64
+    restart: always
+    environment:
+      POSTGRES_USER: local
+      POSTGRES_PASSWORD: local
+      POSTGRES_DB: local
+    networks:
+      - tuanPhan_net
+    command: postgres -N 500
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  localstack:
+    image: localstack/localstack
+    environment:
+      SERVICES: 's3,sqs'
+      HOSTNAME: localstack
+    networks:
+      - tuanPhan_net
+    ports:
+      - 4576:4576
+      - 4572:4572
+      - 4566:4566
+    volumes:
+      - localstack_data:/var/lib/localstack-core_project"
+      - './scripts/localstack/create-s3-bucket.sh:/etc/localstack/init/ready.d/create-s3-bucket.sh'
+
+
+networks:
+  tuanPhan_net:
+    name: tuanPhan_net
+
+
+volumes:
+  db:
+  localstack_data:

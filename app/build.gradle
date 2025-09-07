@@ -1,0 +1,74 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+plugins {
+    id 'application'
+    id 'buildlogic.java-application-conventions'
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.openapiGenerator)
+}
+
+plugins.withId("com.diffplug.spotless") {
+    spotless {
+        java {
+            target fileTree("src") {
+                include "**/*.java"
+                exclude "**/resources/**", "**/generated/**"
+            }
+
+        }
+        format("misc") {
+            target "*.md", ".gitignore"
+            targetExclude "**/build/**"
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
+    }
+}
+
+group "org.example.app"
+version "1.0-SNAPSHOT"
+
+apply from: "$rootProject.projectDir/install-git-hooks.gradle"
+apply from: "$rootProject.projectDir/copy-manifest.gradle"
+
+dependencies {
+    implementation 'org.apache.commons:commons-text'
+    implementation project(':utilities')
+}
+
+application {
+    // Define the main class for the application.
+    mainClass.set('org.example.app.App')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.fork = true
+//    options.forkOptions.jvmArgs << ''
+}
+
+shadowJar {
+    archiveClassifier.set("all")
+    mergeServiceFiles()
+    manifest {
+        attributes 'Main-Class': 'org.example.app.App'
+    }
+    zip64 = true
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events("failed")
+        showStackTraces = true
+        showStandardStreams = true
+        exceptionFormat = TestExceptionFormat.FULL
+    }
+}
+
+tasks.named("copyManifest", Copy).configure {
+    into(layout.buildDirectory.dir("generated-resources/main"))
+}
+
+
+tasks.named("processResources", ProcessResources).configure {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
