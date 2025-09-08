@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Checking code style with Spotless…"
+
+# Runs spotlessCheck across all subprojects that apply the plugin
+./gradlew --daemon spotlessCheck
+
+echo "✅ Spotless check passed."
