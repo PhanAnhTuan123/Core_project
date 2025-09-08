@@ -1,6 +1,40 @@
-tasks.register('installGitHooks', Copy) {
-    from new File(rootProject.rootDir, 'scripts/pre-commit')
-    into {new File(rootProject.rootDir, '.git/hooks')}
+//tasks.register('installGitHooks', Copy) {
+//    from new File(rootProject.rootDir, 'scripts/pre-commit')
+//    into {new File(rootProject.rootDir, '.git/hooks')}
+//}
+//
+//build.dependsOn installGitHooks
+// install-git-hooks.gradle
+import org.gradle.internal.os.OperatingSystem
+
+tasks.register("installGitHooks") {
+    group = "dev-tools"
+    description = "Install Git hooks from scripts/ into the repo's hooks dir."
+
+    doLast {
+        // Determine the hooks directory (respects core.hooksPath)
+        def hooksPath = ["git","config","--get","core.hooksPath"].execute(null, rootDir).text.trim()
+        File hooksDir = hooksPath
+                ? (new File(hooksPath).absolute ? new File(hooksPath) : new File(rootDir, hooksPath))
+                : new File(rootDir, ".git/hooks")
+        if (!hooksDir.exists()) hooksDir.mkdirs()
+
+        // Source hook (updated path)
+        File src = new File(rootDir, "scripts/pre-commit")
+        if (!src.exists())
+            throw new GradleException("Missing ${src}. Did you rename 'script' → 'scripts'?")
+
+        // Copy + make executable (POSIX)
+        File dst = new File(hooksDir, "pre-commit")
+        dst.bytes = src.bytes
+        if (!OperatingSystem.current().isWindows()) {
+            ant.chmod(file: dst, perm: "0755")
+        }
+        println "✅ Installed pre-commit hook → ${dst}"
+    }
 }
 
-build.dependsOn installGitHooks
+// (optional) ensure every regular build installs hooks once
+tasks.matching { it.name == "build" }.configureEach {
+    dependsOn("installGitHooks")
+}
