@@ -1,4 +1,4 @@
-import org.gradle.api.tasks.compile.JavaCompile
+
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {

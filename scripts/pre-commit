@@ -1,9 +1,78 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Checking code style with Spotless…"
+echo "Checking code style…"
 
-# Runs spotlessCheck across all subprojects that apply the plugin
-./gradlew --daemon spotlessCheck
+# Allow bypass for emergencies
+if [[ "${SKIP_CODE_STYLE:-}" == "1" ]]; then
+  echo "SKIP_CODE_STYLE=1 → skipping checks."
+  exit 0
+fi
 
-echo "✅ Spotless check passed."
+# Always run from repo root
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# Only run if code-ish files are staged
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
+if ! grep -E '\.(java|kt|kts|gradle|groovy)$' <<<"$STAGED" >/dev/null 2>&1; then
+  echo "No code changes requiring formatting. Skipping."
+  exit 0
+fi
+
+# Pick gradle
+GRADLE="./gradlew"
+if [[ ! -x "$GRADLE" ]]; then
+  if command -v gradle >/dev/null 2>&1; then GRADLE="gradle"; else
+    echo "Gradle wrapper not found and 'gradle' not installed."
+    exit 1
+  fi
+fi
+
+# Detect formatter (prefer Spotless)
+if grep -R --include="build.gradle" --include="build.gradle.kts" -qE \
+   'com\.diffplug\.spotless|libs\.plugins\.spotless|spotless-conventions' "$ROOT"; then
+  TOOL="spotless"
+elif grep -R --include="build.gradle*" -qE \
+   'org\.jlleitschuh\.gradle\.ktlint|libs\.plugins\.ktlint' "$ROOT"; then
+  TOOL="ktlint"
+else
+  echo "No Spotless or ktlint detected. Skipping."
+  exit 0
+fi
+
+# Use a warmed daemon; keep output quiet for hooks
+ARGS=(--daemon --quiet)
+
+if [[ "$TOOL" == "spotless" ]]; then
+  if ! "$GRADLE" "${ARGS[@]}" spotlessCheck; then
+    echo
+    echo "❌ Spotless violations. Fix with:"
+    echo "   $GRADLE spotlessApply"
+    echo "Then re-stage and commit."
+    exit 1
+  fi
+else
+  # ktlint-based repos
+  # Try ktlintCheck first; if the task doesn't exist, try common alternatives
+  if "$GRADLE" "${ARGS[@]}" ktlintCheck; then
+    :
+  else
+    # fallback task names used in some setups
+    if "$GRADLE" "${ARGS[@]}" lintKotlin; then
+      :
+    else
+      echo "ktlint detected in build files, but no compatible task found (ktlintCheck/lintKotlin)."
+      echo "Please adjust the hook or run the correct task manually."
+      exit 1
+    fi
+  fi
+
+  # If ktlint found issues, Gradle already returned non-zero.
+  # Offer the standard fix command:
+  echo "Tip: auto-fix with:"
+  echo "   $GRADLE ktlintFormat"
+fi
+
+echo "✅ Code style OK."
+exit 0
