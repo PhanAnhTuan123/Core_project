@@ -19,3 +19,6 @@ plugins {
 rootProject.name = 'core_project'
 include('app', 'list', 'utilities')
 include 'module-repository'
+include 'app:api-application'
+include 'core:module-config'
+include 'core:module-asynchronous'

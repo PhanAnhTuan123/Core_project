@@ -25,8 +25,12 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/app/api-application" />
             <option value="$PROJECT_DIR$/build-logic" />
             <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/core" />
+            <option value="$PROJECT_DIR$/core/module-asynchronous" />
+            <option value="$PROJECT_DIR$/core/module-config" />
             <option value="$PROJECT_DIR$/list" />
             <option value="$PROJECT_DIR$/module-repository" />
             <option value="$PROJECT_DIR$/utilities" />
